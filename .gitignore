@@ -1,0 +1,19 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Dataset
+ml-1m/
+
+# Generated data
+processed/
+
+# Saved models
+checkpoints/
+
+# VS Code workspace
+*.code-workspace
+
+# Optional
+.DS_Store
