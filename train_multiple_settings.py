@@ -220,21 +220,31 @@ def main():
                         best_val_losses = sorted(best_val_losses, key=lambda d: d['val_loss'])
         count = 1
         for x in best_val_losses:
+            print(x)
             model_path = os.path.join(CHECKPOINT_DIR, f"best_ncf_model_{count}.pt")
-            torch.save(x["model"].state_dict(), model_path)
+            torch.save(x["model"], model_path)
             epoch = x["epoch"]
             val_loss = x["val_loss"]
-            params = x["params"]
+            lr = x["params"]["lr"]
+            gmf_dim = x["params"]["gmf_dim"]
+            mlp_layers = x["params"]["mlp_layers"]
+            dropout = x["params"]["dropout"]
             with open(os.path.join(CHECKPOINT_DIR, f"best_model_info_{count}.txt"), "w", encoding="utf-8") as f:
                 f.write(f"best_epoch={epoch}\n")
                 f.write(f"best_val_loss={val_loss:.4f}\n")
                 f.write(f"best_model_path={model_path}\n")
-                f.writable(f"best_parameters={params}")
+                f.write(f"best_lr={lr}")
+                f.write(f"best_gmf_dim={gmf_dim}")
+                f.write(f"best_mlp_layers={mlp_layers}")
+                f.write(f"best_dropout={dropout}")
             count+=1
             print("Best epoch:", epoch)
             print("Best validation loss:", round(val_loss, 4))
-            print("Best parameters:",params)
-            print("Best model path:", model_path)
+            print("Best learning rate:",lr)
+            print("Best GMF dimensions:",gmf_dim)
+            print("Best MLP layers:",mlp_layers)
+            print("Best learning rate:",lr)
+            print("Best dropout:", dropout)
     # Save best model info
         
 
