@@ -13,7 +13,7 @@ from model import NCF
 # ----------------------------
 SEED = 42
 BATCH_SIZE = 256
-EPOCHS = 20
+EPOCHS = 50
 PATIENCE = 3
 
 #LEARNING_RATE = 0.001
@@ -124,7 +124,7 @@ def main():
     
     learning_rates = np.arange(1e-5,1e-3, 1.98e-4)
     gmf_dim_set = [16, 32, 64, 128]
-    mlp_layer_sets = [[256, 128, 64, 32], [128, 64, 32, 16],[64, 32, 16, 8], [32, 16, 8, 4]]
+    mlp_layer_sets = [[256, 128, 64, 32], [128, 64, 32, 16],[64, 32, 16, 8], [128,64, 32, 16, 8]]
     dropout_sets = np.arange(0.05,0.25, 0.5, dtype=float)
     # Load data
     train_df = pd.read_csv(TRAIN_PATH)
@@ -220,7 +220,6 @@ def main():
                         best_val_losses = sorted(best_val_losses, key=lambda d: d['val_loss'])
         count = 1
         for x in best_val_losses:
-            print(x)
             model_path = os.path.join(CHECKPOINT_DIR, f"best_ncf_model_{count}.pt")
             torch.save(x["model"], model_path)
             epoch = x["epoch"]
@@ -233,10 +232,10 @@ def main():
                 f.write(f"best_epoch={epoch}\n")
                 f.write(f"best_val_loss={val_loss:.4f}\n")
                 f.write(f"best_model_path={model_path}\n")
-                f.write(f"best_lr={lr}")
-                f.write(f"best_gmf_dim={gmf_dim}")
-                f.write(f"best_mlp_layers={mlp_layers}")
-                f.write(f"best_dropout={dropout}")
+                f.write(f"best_lr={lr}\n")
+                f.write(f"best_gmf_dim={gmf_dim}\n")
+                f.write(f"best_mlp_layers={mlp_layers}\n")
+                f.write(f"best_dropout={dropout}\n")
             count+=1
             print("Best epoch:", epoch)
             print("Best validation loss:", round(val_loss, 4))
