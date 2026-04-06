@@ -27,9 +27,9 @@ RS-Assignment1/
 ├── checkpoints/                # Saved trained model (not included in repo)
 ├── model.py                    # NCF model
 ├── train.py                    # Training script
-├── train_multiple_settings.py                 # Evaluation script
+├── train_multiple_settings.py  # Training script for parameter testing
 ├── Evaluate.py                 # Evaluation script
-├── Evaluate_multiple_settings.py                 # Evaluation script
+├── Evaluate_multiple_settings.py  # Evaluation script for parameter testing
 ├── preprocessing_UpgradebyG.py # Preprocessing script
 ├── README.md
 └── .gitignore
