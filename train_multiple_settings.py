@@ -6,14 +6,14 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from model import NCF
-
+import tqdm
 
 # ----------------------------
 # Settings
 # ----------------------------
 SEED = 42
 BATCH_SIZE = 256
-EPOCHS = 50
+EPOCHS = 20
 PATIENCE = 3
 
 #LEARNING_RATE = 0.001
@@ -122,10 +122,10 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
     
-    learning_rates = np.arange(1e-5,1e-3, 1.98e-4)
-    gmf_dim_set = [16, 32, 64, 128]
-    mlp_layer_sets = [[256, 128, 64, 32], [128, 64, 32, 16],[64, 32, 16, 8], [128,64, 32, 16, 8]]
-    dropout_sets = np.arange(0.05,0.25, 0.5, dtype=float)
+    learning_rates = [1e-5,1e-3, 1e-4]
+    gmf_dim_set = [32, 64, 128]
+    mlp_layer_sets = [ [128, 64, 32, 16],[64, 32, 16, 8], [128,64, 32, 16, 8]]
+    dropout_sets = [0.05,0.10,0.20]
     # Load data
     train_df = pd.read_csv(TRAIN_PATH)
     val_df = pd.read_csv(VAL_PATH)
@@ -145,13 +145,15 @@ def main():
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    all_val_losses = []
     best_val_losses = []
 
     for lr in learning_rates:
         for gmf_dim in gmf_dim_set:
+            print(f'current gmf_dim:{gmf_dim}')
             for mlp_layers in mlp_layer_sets:
                 for dropout in dropout_sets:
-                    
+                    curr_val_losses = []
                     # Build model
                     model = NCF(
                         num_users=num_users,
@@ -188,6 +190,7 @@ def main():
                             device=device,
                             train=False
                         )
+                        curr_val_losses.append(val_loss)
                         # Check improvement
                         if val_loss < best_val_loss:
                             best_val_loss = val_loss
@@ -199,10 +202,10 @@ def main():
                         # Early stopping
                         if patience_counter >= PATIENCE:
                             break
-                    
+                    all_val_losses.append([curr_val_losses,{"lr":lr,"gmf_dim":gmf_dim,"mlp_layers":mlp_layers,"dropout":dropout}])
                     if len(best_val_losses)<5:
-                        best_val_losses.append({"val_loss":val_loss,
-                                                "epoch":epoch,
+                        best_val_losses.append({"val_loss":best_val_loss,
+                                                "epoch":best_epoch,
                                                 "params":{"lr":lr,
                                                 "gmf_dim":gmf_dim,
                                                 "mlp_layers":mlp_layers,
@@ -210,8 +213,8 @@ def main():
                                                 "model":model.state_dict()})
                         best_val_losses = sorted(best_val_losses, key=lambda d: d['val_loss'])
                     elif best_val_losses[4]["val_loss"] > best_val_loss:
-                        best_val_losses[4] = {"val_loss":val_loss,
-                                                "epoch":epoch,
+                        best_val_losses[4] = {"val_loss":best_val_loss,
+                                                "epoch":best_epoch,
                                                 "params":{"lr":lr,
                                                 "gmf_dim":gmf_dim,
                                                 "mlp_layers":mlp_layers,
@@ -248,8 +251,18 @@ def main():
         
 
     print("Training finished.")
-    
-
+    for i in range(len(all_val_losses)):
+        for j in range(len(best_val_losses)):
+            if all_val_losses[i][1] == best_val_losses[j]["params"]:
+                print("Test")
+                df = pd.DataFrame({
+                "val_error": all_val_losses[i],
+                "epochs":range(1, len(all_val_losses[i])+1),
+                "eval_std_returns":[i+1]*len(all_val_losses[i])
+                })
+                df.to_csv(os.path.join(CHECKPOINT_DIR, f"best_model_val_loss_{j}.csv"))
 
 if __name__ == "__main__":
     main()
+    
+   
