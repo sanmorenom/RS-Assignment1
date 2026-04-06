@@ -12,8 +12,6 @@ index = 0
 print('start checking files')
 while index < len(files):
     x = []
-    y = []
-    std = []
     filename = files[index]
     if filename.endswith('.csv'):
         with open(f'{folder}{filename}','r') as csvfile:
