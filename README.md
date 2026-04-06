@@ -26,6 +26,7 @@ RS-Assignment1/
 ├── processed/                  # Generated processed files (not included in repo)
 ├── checkpoints/                # Saved trained model (not included in repo)
 ├── model.py                    # NCF model
+├── plot.py                     # Results curves of abliation
 ├── train.py                    # Training script
 ├── train_multiple_settings.py  # Training script for parameter testing
 ├── Evaluate.py                 # Evaluation script
@@ -52,4 +53,3 @@ Some possible next steps for future work:
 - **Cleaner naming:** rename `Evaluate.py` to `evaluate.py` and `preprocessing_UpgradebyG.py` to `preprocessing.py`.
 
 
-(Basically use your gpu and do it, I did all this with only CPU because it was too late therefore the SSH was not available probably they turn them off in the nights...)
