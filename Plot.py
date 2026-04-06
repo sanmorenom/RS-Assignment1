@@ -31,7 +31,6 @@ while index < len(files):
 
 fig, ax = plt.subplots()
 ax.set_title(f'Experiment: Validation loss over epochs for the top 5 models.')
-ax1 = ax.twinx()
 leg = []
 
 print(x_list[0][0])
