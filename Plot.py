@@ -6,10 +6,11 @@ from scipy.signal import savgol_filter
 from ast import literal_eval
 x_list = []
 titles = []
-folder = f'CSVs/'
+folder = f'checkpoints/'
 files = os.listdir(folder)
 index = 0
 print('start checking files')
+counter = 0
 while index < len(files):
     x = []
     filename = files[index]
@@ -19,7 +20,8 @@ while index < len(files):
             for row in lines:
                 
                 if row[1] == 'val_error':
-                    titles.append(f'Model {index+1}')
+                    titles.append(f'Model {counter+1}')
+                    counter+=1
                 elif row[0] == '0':
                     x.append(literal_eval(row[1]))
                     
