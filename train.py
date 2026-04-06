@@ -1,0 +1,214 @@
+import os
+import copy
+import pandas as pd
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+
+from model import NCF
+
+
+# ----------------------------
+# Settings
+# ----------------------------
+SEED = 42
+BATCH_SIZE = 256
+EPOCHS = 20
+LEARNING_RATE = 0.001
+PATIENCE = 3
+
+GMF_DIM = 32
+MLP_LAYERS = [64, 32, 16, 8]
+DROPOUT = 0.2
+
+torch.manual_seed(SEED)
+
+
+# ----------------------------
+# Paths
+# ----------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROCESSED_DIR = os.path.join(BASE_DIR, "processed")
+CHECKPOINT_DIR = os.path.join(BASE_DIR, "checkpoints")
+os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+
+TRAIN_PATH = os.path.join(PROCESSED_DIR, "train.csv")
+VAL_PATH = os.path.join(PROCESSED_DIR, "val.csv")
+INFO_PATH = os.path.join(PROCESSED_DIR, "data_info.txt")
+BEST_MODEL_PATH = os.path.join(CHECKPOINT_DIR, "best_ncf_model.pt")
+BEST_MODEL_INFO_PATH = os.path.join(CHECKPOINT_DIR, "best_model_info.txt")
+
+
+# ----------------------------
+# Dataset class
+# ----------------------------
+class InteractionDataset(Dataset):
+    """
+    Dataset for user-item-label interactions.
+    """
+
+    def __init__(self, dataframe):
+        self.users = torch.tensor(dataframe["userId"].values, dtype=torch.long)
+        self.items = torch.tensor(dataframe["movieId"].values, dtype=torch.long)
+        self.labels = torch.tensor(dataframe["label"].values, dtype=torch.float32)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        return self.users[idx], self.items[idx], self.labels[idx]
+
+
+# ----------------------------
+# Helper function
+# ----------------------------
+def load_data_info(info_path):
+    """
+    Read num_users and num_items from data_info.txt
+    """
+    info = {}
+
+    with open(info_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            key, value = line.split("=", 1)
+            info[key] = value
+
+    num_users = int(info["num_users"])
+    num_items = int(info["num_items"])
+
+    return num_users, num_items
+
+
+def run_one_epoch(model, dataloader, criterion, optimizer, device, train=True):
+    """
+    Run one training or validation epoch.
+    """
+    if train:
+        model.train()
+    else:
+        model.eval()
+
+    total_loss = 0.0
+
+    for users, items, labels in dataloader:
+        users = users.to(device)
+        items = items.to(device)
+        labels = labels.to(device)
+
+        if train:
+            optimizer.zero_grad()
+
+        preds = model(users, items)
+        loss = criterion(preds, labels)
+
+        if train:
+            loss.backward()
+            optimizer.step()
+
+        total_loss += loss.item() * len(labels)
+
+    avg_loss = total_loss / len(dataloader.dataset)
+    return avg_loss
+
+
+# ----------------------------
+# Main training
+# ----------------------------
+def main():
+    # Device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
+
+    # Load data
+    train_df = pd.read_csv(TRAIN_PATH)
+    val_df = pd.read_csv(VAL_PATH)
+
+    print("Train samples:", len(train_df))
+    print("Validation samples:", len(val_df))
+
+    # Load metadata
+    num_users, num_items = load_data_info(INFO_PATH)
+    print("Num users:", num_users)
+    print("Num items:", num_items)
+
+    # Create datasets
+    train_dataset = InteractionDataset(train_df)
+    val_dataset = InteractionDataset(val_df)
+
+    # Create dataloaders
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
+
+    # Build model
+    model = NCF(
+        num_users=num_users,
+        num_items=num_items,
+        gmf_dim=GMF_DIM,
+        mlp_layers=MLP_LAYERS,
+        dropout=DROPOUT
+    ).to(device)
+
+    # Loss and optimizer
+    criterion = nn.BCELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+    # Early stopping variables
+    best_val_loss = float("inf")
+    best_epoch = 0
+    patience_counter = 0
+
+    # Training loop
+    for epoch in range(1, EPOCHS + 1):
+        train_loss = run_one_epoch(
+            model=model,
+            dataloader=train_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            device=device,
+            train=True
+        )
+
+        val_loss = run_one_epoch(
+            model=model,
+            dataloader=val_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            device=device,
+            train=False
+        )
+
+        print(f"Epoch {epoch}/{EPOCHS} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
+
+        # Check improvement
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_epoch = epoch
+            torch.save(model.state_dict(), BEST_MODEL_PATH)
+            patience_counter = 0
+            print(f"Best model saved at epoch {best_epoch} with val loss {best_val_loss:.4f}")
+        else:
+            patience_counter += 1
+            print(f"No improvement. Patience: {patience_counter}/{PATIENCE}")
+
+        # Early stopping
+        if patience_counter >= PATIENCE:
+            print("Early stopping triggered.")
+            break
+
+    # Save best model info
+    with open(BEST_MODEL_INFO_PATH, "w", encoding="utf-8") as f:
+        f.write(f"best_epoch={best_epoch}\n")
+        f.write(f"best_val_loss={best_val_loss:.4f}\n")
+        f.write(f"best_model_path={BEST_MODEL_PATH}\n")
+
+    print("Training finished.")
+    print("Best epoch:", best_epoch)
+    print("Best validation loss:", round(best_val_loss, 4))
+    print("Best model path:", BEST_MODEL_PATH)
+
+
+if __name__ == "__main__":
+    main()
