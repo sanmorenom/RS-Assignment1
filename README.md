@@ -42,10 +42,10 @@ Some possible next steps for future work:
 
 - **User-based split:** use a split per user instead of a fully random interaction split.
 - **Hyperparameter tuning:** try different values for:
-  - GMF dimension: `32`, `64`, `128`
-  - MLP layers: [128, 64, 32, 16],[64, 32, 16, 8], [128,64, 32, 16, 8]
-  - dropout: `0.05`, `0.1`, `0.2`
-  - learning rate: `0.0001`, `0.001`, `0.00001`
+  - GMF dimension: `16`, `256`
+  - MLP layers: [256, 128, 64, 32], [32,16, 8, 4]
+  - dropout: `0.0`, `0.15`, `0.25`
+  - learning rate: `0.0005`, `0.005`, `0.00005`
 - **Negative sampling:** compare different negative sampling ratios such as `1`, `3`, `5`.
 - **Experiment tracking:** save best epoch, validation loss, Recall@10, and NDCG@10 for each run.
 - **Training logs:** store train/validation loss per epoch for easier plotting and analysis.
