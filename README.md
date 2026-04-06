@@ -10,46 +10,103 @@ The system includes:
 - NCF model implementation
 - training with early stopping
 - evaluation with Recall@10 and NDCG@10
+- comparison across multiple hyperparameter settings
+- validation-loss plotting for the top models
 
 The dataset is treated as implicit feedback:
 
-- ratings **>= 4** are considered positive interactions
+- ratings >= 4 are considered positive interactions
 - negative interactions are generated with negative sampling
 
----
+## Requirements
 
-## Project Structure
+- Python 3.10+ recommended
+- pip
 
-```text
+### Python packages
+- torch
+- pandas
+- numpy
+- scikit-learn
+
+### Optional packages
+- matplotlib
+- scipy
+
+## Dataset
+
+Download the MovieLens 1M dataset and place it in the project folder as:
+
+ml-1m/ratings.dat
+
+Expected structure:
+
 RS-Assignment1/
-├── ml-1m/                      # MovieLens 1M dataset (not included in repo)
-├── processed/                  # Generated processed files (not included in repo)
-├── checkpoints/                # Saved trained model (not included in repo)
-├── model.py                    # NCF model
-├── plot.py                     # Results curves of abliation
-├── train.py                    # Training script
-├── train_multiple_settings.py  # Training script for parameter testing
-├── Evaluate.py                 # Evaluation script
-├── Evaluate_multiple_settings.py  # Evaluation script for parameter testing
-├── preprocessing_UpgradebyG.py # Preprocessing script
+├── ml-1m/
+│   └── ratings.dat
+├── processed/
+├── checkpoints/
+├── model.py
+├── Plot.py
+├── train.py
+├── train_multiple_settings.py
+├── Evaluate.py
+├── Evaluate_multiple_settings.py
+├── preprocessing_UpgradebyG.py
 ├── README.md
 └── .gitignore
 
+Notes:
+- `ml-1m/`, `processed/`, and `checkpoints/` are not included in the repository.
+- `processed/` and `checkpoints/` will be generated after running the scripts.
+
+## Install dependencies
+
+pip install torch pandas numpy scikit-learn matplotlib scipy
+
+## How to run
+
+### 1. Preprocess the dataset
+python preprocessing_UpgradebyG.py
+
+### 2. Train the baseline model
+python train.py
+
+### 3. Evaluate the baseline model
+python Evaluate.py
+
+### 4. Train multiple model settings
+python train_multiple_settings.py
+
+### 5. Evaluate the top saved models
+python Evaluate_multiple_settings.py
+
+### 6. Plot validation loss curves for the saved top models
+python Plot.py
+
+## File Description
+
+- `preprocessing_UpgradebyG.py`: loads MovieLens 1M, converts ratings to implicit feedback, applies negative sampling, and creates train/validation/test splits.
+- `model.py`: defines the NCF architecture with GMF and MLP branches.
+- `train.py`: trains the baseline NCF model with early stopping.
+- `Evaluate.py`: evaluates the baseline model using Recall@10 and NDCG@10.
+- `train_multiple_settings.py`: trains several hyperparameter configurations and keeps the top-performing models.
+- `Evaluate_multiple_settings.py`: evaluates the saved top models using full-ranking metrics.
+- `Plot.py`: plots validation loss over epochs for the top saved models.
+
+## Notes
+
+- GPU is optional.
+- The code automatically uses CUDA if available; otherwise it runs on CPU.
+- matplotlib and scipy are only needed for optional plotting.
+- Full-ranking evaluation excludes items already seen in training and validation for each user.
 
 ## Possible Improvements
 
 Some possible next steps for future work:
 
-- **User-based split:** use a split per user instead of a fully random interaction split.
-- **Hyperparameter tuning:** try different values for:
-  - GMF dimension: `16`, `256`
-  - MLP layers: [256, 128, 64, 32], [32,16, 8, 4]
-  - dropout: `0.0`, `0.15`, `0.25`
-  - learning rate: `0.0005`, `0.005`, `0.00005`
-- **Negative sampling:** compare different negative sampling ratios such as `1`, `3`, `5`.
-- **Experiment tracking:** save best epoch, validation loss, Recall@10, and NDCG@10 for each run.
-- **Training logs:** store train/validation loss per epoch for easier plotting and analysis.
-- **Model comparison:** train several settings and compare results in one table.
-- **Cleaner naming:** rename `Evaluate.py` to `evaluate.py` and `preprocessing_UpgradebyG.py` to `preprocessing.py`.
-
-
+- use a user-based split instead of a fully random interaction split
+- explore additional hyperparameter settings
+- compare different negative sampling ratios
+- add more ranking or recommendation quality metrics such as coverage and diversity
+- improve experiment tracking and logging
